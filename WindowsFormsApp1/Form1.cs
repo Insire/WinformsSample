@@ -1,6 +1,7 @@
 ﻿using Bogus;
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Windows.Forms;
 
 namespace WindowsFormsApp1
@@ -13,14 +14,12 @@ namespace WindowsFormsApp1
         private DateTime _start;
 
         public Form1()
-
         {
             InitializeComponent();
         }
 
         protected override void OnLoad(EventArgs e)
         {
-            BS_User.DataSource = _usersList;
             base.OnLoad(e);
 
             _start = DateTime.UtcNow;
@@ -31,14 +30,14 @@ namespace WindowsFormsApp1
         private void backgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
         {
             var faker = new Faker("en");
-            const double maxUsers = 1000d;
+            const double maxUsers = 100_000d;
 
             for (var i = 0; i < maxUsers; i++)
             {
                 var u = new User()
                 {
                     Id = i,
-                    Name = faker.Lorem.Word(),
+                    Name = i + " " + faker.Lorem.Word(),
                 };
 
                 for (var j = 0; j < faker.Random.Number(500); j++)
@@ -53,32 +52,7 @@ namespace WindowsFormsApp1
                     u.Datas.Add(o);
                 }
 
-                MethodInvoker methodInvokerDelegate = delegate ()
-                {
-                    if (!Disposing || IsDisposed)
-                    {
-                        _usersList.Add(u);
-                    }
-                };
-
-                if (InvokeRequired)
-                {
-                    if (!Disposing || IsDisposed)
-                    {
-                        try
-                        {
-                            Invoke(methodInvokerDelegate);
-                        }
-                        catch (ObjectDisposedException)
-                        {
-                            return;
-                        }
-                    }
-                }
-                else
-                {
-                    methodInvokerDelegate();
-                }
+                _usersList.Add(u);
 
                 var progress = Math.Round((i + 1) / maxUsers * 100, 0, MidpointRounding.AwayFromZero);
                 backgroundWorker1.ReportProgress((int)progress, u);
@@ -89,6 +63,7 @@ namespace WindowsFormsApp1
         {
             progressBar1.Value = e.ProgressPercentage;
             label1.Text = e.ProgressPercentage.ToString();
+            label2.Text = _usersList.Count.ToString();
         }
 
         private void ComboBox1_SelectedValueChanged(object sender, EventArgs e)
@@ -102,7 +77,9 @@ namespace WindowsFormsApp1
 
         private void backgroundWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
+            BS_User.DataSource = _usersList;
             label1.Text = (DateTime.UtcNow - _start).ToString();
+            label2.Text = _usersList.Count.ToString();
         }
     }
 }
